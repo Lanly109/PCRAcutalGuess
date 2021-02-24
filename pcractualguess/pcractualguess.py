@@ -30,7 +30,7 @@ async def bangzhu(bot, ev):
 
 PRICE = 150 #获胜所得的金币
 MAX_NUM = 6 #每日获得的金币次数
-DOWNLOAD_THRESHOLD = 141
+DOWNLOAD_THRESHOLD = 142
 MULTIPLE_VOICE_ESTERTION_ID_LIST = ['0044']
 ONE_TURN_TIME = 15
 HOSHINO_RES_PATH = os.path.expanduser(hoshino.config.RES_DIR)
