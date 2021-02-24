@@ -138,11 +138,11 @@ async def on_input_chara_name(bot, ev: CQEvent):
         if lm.check((gid, uid)):
             msg += f'TA获得了{PRICE}金币！'
             lm.increase((gid, uid))
+            try:
+                score_counter = ScoreCounter2()
+                score_counter._add_score(gid, uid, PRICE)
+            except Exception as e:
+                await bot.send(ev, '错误:\n' + str(e))
         else:
             msg += f'由于本游戏每日可获得最多{MAX_NUM}次金币，所以本次游戏TA将不再获得。'
-        try:
-            score_counter = ScoreCounter2()
-            score_counter._add_score(gid, uid, PRICE)
-        except Exception as e:
-            await bot.send(ev, '错误:\n' + str(e))
         await bot.send(ev, msg)
