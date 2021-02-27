@@ -6,6 +6,7 @@ import os
 import random
 import aiohttp
 import requests
+import datetime
 from io import BytesIO
 from PIL import Image
 from bs4 import BeautifulSoup
@@ -17,6 +18,8 @@ from hoshino.modules.priconne import chara
 from hoshino.modules.priconne.pcr_duel import ScoreCounter2
 from hoshino.typing import MessageSegment, CQEvent
 from . import GameMaster
+from nonebot import scheduler
+
 
 sv_help = '''
 - [猜现实] 猜猜随机的角色现实图片是哪位角色
@@ -105,20 +108,30 @@ async def acutal_guess_group_ranking(bot, ev: CQEvent):
 async def actual_guess(bot, ev: CQEvent):
     if gm.is_playing(ev.group_id):
         await bot.finish(ev, "游戏仍在进行中…")
-    with gm.start_game(ev.group_id) as game:
-        if not os.path.exists(DIR_PATH) or len(os.listdir(DIR_PATH)) < DOWNLOAD_THRESHOLD:
-            await download_actual_photo(bot, ev)
-            return
-        file_list = os.listdir(DIR_PATH)
-        chosen_chara = random.choice(file_list)
-        await bot.send(ev, f'猜猜这张图片是哪个角色? ({ONE_TURN_TIME}s后公布答案)')
-        await bot.send(ev, R.img(f'priconne/unit/actual/{chosen_chara}').cqcode)
-        game.answer = int(chosen_chara[0:4])
-        await asyncio.sleep(ONE_TURN_TIME)
-        # 结算
-        if game.winner:
-            return
-        c = chara.fromid(game.answer)
+    if not os.path.exists(DIR_PATH) or len(os.listdir(DIR_PATH)) < DOWNLOAD_THRESHOLD:
+        await download_actual_photo(bot, ev)
+        return
+    # with gm.start_game(ev.group_id) as game:
+    game = gm.start_game(ev.group_id)
+    file_list = os.listdir(DIR_PATH)
+    chosen_chara = random.choice(file_list)
+    await bot.send(ev, f'猜猜这张图片是哪个角色? ({ONE_TURN_TIME}s后公布答案)')
+    await bot.send(ev, R.img(f'priconne/unit/actual/{chosen_chara}').cqcode)
+    game.answer = int(chosen_chara[0:4])
+    game.set_schedule(scheduler.add_job(check, 'date', args=(bot, ev,), next_run_time=datetime.datetime.now() + datetime.timedelta(seconds = ONE_TURN_TIME)))
+    #     await asyncio.sleep(ONE_TURN_TIME)
+    #     # 结算
+    #     if game.winner:
+    #         return
+    #     c = chara.fromid(game.answer)
+    # await bot.send(ev, f"正确答案是: {c.name} {c.icon.cqcode}\n很遗憾，没有人答对~")
+
+async def check(bot, ev):
+    game = gm.get_game(ev.group_id)
+    if game.winner:
+        return
+    c = chara.fromid(game.answer)
+    gm.exit_game(ev.group_id)
     await bot.send(ev, f"正确答案是: {c.name} {c.icon.cqcode}\n很遗憾，没有人答对~")
 
 
@@ -131,18 +144,16 @@ async def on_input_chara_name(bot, ev: CQEvent):
     if c.id != chara.UNKNOWN and c.id == game.answer:
         game.winner = ev.user_id
         n = game.record()
-        gm.exit_game(ev.group_id)
         uid = ev.user_id
         gid = ev.group_id
         msg = f"正确答案是: {c.name}{c.icon.cqcode}\n{MessageSegment.at(ev.user_id)}猜对了，真厉害！TA已经猜对{n}次了~\n"
         if lm.check((gid, uid)):
             msg += f'TA获得了{PRICE}金币！'
             lm.increase((gid, uid))
-            try:
-                score_counter = ScoreCounter2()
-                score_counter._add_score(gid, uid, PRICE)
-            except Exception as e:
-                await bot.send(ev, '错误:\n' + str(e))
+            score_counter = ScoreCounter2()
+            score_counter._add_score(gid, uid, PRICE)
         else:
             msg += f'由于本游戏每日可获得最多{MAX_NUM}次金币，所以本次游戏TA将不再获得。'
+        game.remove_schedule()
+        gm.exit_game(ev.group_id)
         await bot.send(ev, msg)

@@ -4,6 +4,10 @@
 
 本项目仓库地址：[https://github.com/Lanly109/PCRAcutalGuess](https://github.com/Lanly109/PCRAcutalGuess)
 
+2021.02.27更新
+
+优化代码逻辑，移除游戏结束后CD。
+
 ## 安装方式
 
 1. clone或者下载此仓库的代码
@@ -20,7 +24,7 @@
 
 1. 首次开始游戏时，插件会从[干炸里脊资源站](https://redive.estertion.win)上下载现实图片资源包，直到数量达到代码中设置的`DOWNLOAD_THRESHOLD`。下载的图片会放入`res/img/priconne/unit/actual`文件夹下，其中`res`为Hoshinobot的资源文件夹。
 
-2. 此插件兼容贵族决斗(位于`hoshino/modules/priconne/pcr_duel`)的金币系统，如无需该功能，请注释第`17`行和第`138-147`行代码。
+2. 此插件兼容贵族决斗(位于`hoshino/modules/priconne/pcr_duel`)的金币系统，如无需该功能，请注释第`18`行和第`150-156`行代码。
 
 3. 每次获胜可获得150金币，上限6次，如有需要可更改`PRICE`和`MAX_NUM`的值。
 

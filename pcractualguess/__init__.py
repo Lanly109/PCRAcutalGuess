@@ -5,7 +5,6 @@
 import os
 import sqlite3
 
-
 class Dao:
     def __init__(self, db_path):
         self.db_path = db_path
@@ -57,7 +56,8 @@ class GameMaster:
         return gid in self.playing
 
     def start_game(self, gid):
-        return Game(gid, self)
+        self.playing[gid] = Game(gid, self)
+        return self.playing[gid]
 
     def exit_game(self, gid):
         del self.playing[gid]
@@ -76,6 +76,7 @@ class Game:
         self.gm = game_master
         self.answer = 0
         self.winner = 0
+        self.job = None
 
     def __enter__(self):
         self.gm.playing[self.gid] = self
@@ -84,6 +85,12 @@ class Game:
     def __exit__(self, type_, value, trace):
         if self.gid in self.gm.playing and self.gm.playing[self.gid] == self:
             del self.gm.playing[self.gid]
+
+    def set_schedule(self, sche):
+        self.job = sche
+
+    def remove_schedule(self):
+        self.job.remove()
 
     def record(self):
         return self.gm.db.record_winning(self.gid, self.winner)
